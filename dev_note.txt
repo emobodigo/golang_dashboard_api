@@ -1,0 +1,4 @@
+#Making Migration File
+    migrate create -ext sql -dir db/migrations $your_migration_name
+
+    

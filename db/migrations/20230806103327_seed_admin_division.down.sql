@@ -1,0 +1,1 @@
+TRUNCATE `admin_division`
