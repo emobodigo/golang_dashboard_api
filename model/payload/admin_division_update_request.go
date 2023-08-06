@@ -1,6 +1,6 @@
 package payload
 
 type AdminDivisionUpdateRequest struct {
-	DivisionId   int
-	DivisionName string
+	DivisionId   int    `validate:"required"`
+	DivisionName string `validate:"required" json:"division_name"`
 }

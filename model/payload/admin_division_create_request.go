@@ -1,5 +1,5 @@
 package payload
 
 type AdminDivisionCreateRequest struct {
-	DivisionName string
+	DivisionName string `validate:"required" json:"division_name"`
 }

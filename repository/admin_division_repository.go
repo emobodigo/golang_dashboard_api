@@ -12,6 +12,10 @@ import (
 type AdminDivisionRepository struct {
 }
 
+func NewAdminDivisionRepository() IAdminDivisionRepository {
+	return &AdminDivisionRepository{}
+}
+
 func (a *AdminDivisionRepository) Delete(ctx context.Context, tx *sql.Tx, id int) {
 	SQL := "DELETE FROM `admin_division` WHERE `division_id` = ?"
 	_, err := tx.ExecContext(ctx, SQL, id)

@@ -1,6 +1,6 @@
 package payload
 
 type AdminDivisionResponse struct {
-	DivisionId   int
-	DivisionName string
+	DivisionId   int    `json:"division_id"`
+	DivisionName string `json:"division_name"`
 }
