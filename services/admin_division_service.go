@@ -5,6 +5,7 @@ import (
 
 	"context"
 
+	"github.com/emobodigo/golang_dashboard_api/exception"
 	"github.com/emobodigo/golang_dashboard_api/helper"
 	"github.com/emobodigo/golang_dashboard_api/model/domain"
 	"github.com/emobodigo/golang_dashboard_api/model/payload"
@@ -48,7 +49,9 @@ func (a *AdminDivisionService) Delete(ctx context.Context, id int) {
 	defer helper.CommitOrRollback(tx)
 
 	_, err = a.AdminDivisionRepository.FindById(ctx, tx, id)
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
 
 	a.AdminDivisionRepository.Delete(ctx, tx, id)
 }
@@ -69,7 +72,9 @@ func (a *AdminDivisionService) FindById(ctx context.Context, id int) payload.Adm
 	defer helper.CommitOrRollback(tx)
 
 	adminDivision, err := a.AdminDivisionRepository.FindById(ctx, tx, id)
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
 
 	return helper.ToAdminDivisionResponse(adminDivision)
 }
@@ -83,7 +88,9 @@ func (a *AdminDivisionService) Update(ctx context.Context, request payload.Admin
 	defer helper.CommitOrRollback(tx)
 
 	adminDivision, err := a.AdminDivisionRepository.FindById(ctx, tx, request.DivisionId)
-	helper.PanicIfError(err)
+	if err != nil {
+		panic(exception.NewNotFoundError(err.Error()))
+	}
 
 	adminDivision.DivisionName = request.DivisionName
 
