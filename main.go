@@ -20,9 +20,9 @@ func main() {
 	err := godotenv.Load()
 	helper.PanicIfError(err)
 	port := os.Getenv("PORT")
+
 	db := app.NewDB()
 	validate := validator.New()
-
 	adminDivisionRepo := repository.NewAdminDivisionRepository()
 	adminDivisionService := services.NewAdminService(adminDivisionRepo, db, validate)
 	adminDivisionController := controller.NewAdminDivisionController(adminDivisionService)

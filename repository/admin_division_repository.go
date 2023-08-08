@@ -54,7 +54,7 @@ func (a *AdminDivisionRepository) FindById(ctx context.Context, tx *sql.Tx, id i
 
 func (a *AdminDivisionRepository) Save(ctx context.Context, tx *sql.Tx, adminDivision domain.AdminDivision) domain.AdminDivision {
 	SQL := "INSERT INTO `admin_division` (`division_name`) VALUES (?)"
-	result, err := tx.ExecContext(ctx, SQL, adminDivision)
+	result, err := tx.ExecContext(ctx, SQL, adminDivision.DivisionName)
 	helper.PanicIfError(err)
 
 	id, err := result.LastInsertId()

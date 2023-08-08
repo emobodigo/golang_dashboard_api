@@ -18,6 +18,10 @@ func ErrorHandler(w http.ResponseWriter, r *http.Request, err interface{}) {
 		return
 	}
 
+	if conflictError(w, r, err) {
+		return
+	}
+
 	internalServerError(w, r, err)
 }
 
@@ -70,5 +74,23 @@ func validationError(w http.ResponseWriter, r *http.Request, err interface{}) bo
 	} else {
 		return false
 	}
+}
 
+func conflictError(w http.ResponseWriter, r *http.Request, err interface{}) bool {
+	exception, ok := err.(ConflictError)
+	if ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+
+		apiResponse := payload.ApiResponse{
+			Code:   http.StatusConflict,
+			Status: "Conflict Duplicate",
+			Data:   exception.Error,
+		}
+
+		helper.WriteToResponseBody(w, apiResponse)
+		return true
+	} else {
+		return false
+	}
 }

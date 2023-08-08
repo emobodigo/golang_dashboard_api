@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"errors"
 
 	"context"
 
@@ -34,6 +35,12 @@ func (a *AdminDivisionService) Create(ctx context.Context, request payload.Admin
 	tx, err := a.DB.Begin()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
+
+	duplicate := helper.CheckDuplicate(ctx, tx, "admin_division", "division_name", request.DivisionName)
+	if duplicate {
+		err := errors.New("duplicate division name")
+		panic(exception.NewConflictError(err.Error()))
+	}
 
 	adminDivision := domain.AdminDivision{
 		DivisionName: request.DivisionName,
