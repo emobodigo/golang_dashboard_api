@@ -1,9 +1,6 @@
 package services
 
 import (
-	"database/sql"
-	"errors"
-
 	"context"
 
 	"github.com/emobodigo/golang_dashboard_api/exception"
@@ -16,14 +13,12 @@ import (
 
 type AdminDivisionService struct {
 	AdminDivisionRepository repository.IAdminDivisionRepository
-	DB                      *sql.DB
 	Validate                *validator.Validate
 }
 
-func NewAdminService(adminDivisionRepository repository.IAdminDivisionRepository, db *sql.DB, validate *validator.Validate) IAdminDivisionService {
+func NewAdminService(adminDivisionRepository repository.IAdminDivisionRepository, validate *validator.Validate) IAdminDivisionService {
 	return &AdminDivisionService{
 		AdminDivisionRepository: adminDivisionRepository,
-		DB:                      db,
 		Validate:                validate,
 	}
 }
@@ -32,53 +27,32 @@ func (a *AdminDivisionService) Create(ctx context.Context, request payload.Admin
 	err := a.Validate.Struct(request)
 	helper.PanicIfError(err)
 
-	tx, err := a.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
-
-	duplicate := helper.CheckDuplicate(ctx, tx, "admin_division", "division_name", request.DivisionName)
-	if duplicate {
-		err := errors.New("duplicate division name")
-		panic(exception.NewConflictError(err.Error()))
-	}
-
 	adminDivision := domain.AdminDivision{
 		DivisionName: request.DivisionName,
 	}
-	adminDivision = a.AdminDivisionRepository.Save(ctx, tx, adminDivision)
+	adminDivision = a.AdminDivisionRepository.Save(ctx, adminDivision)
 
 	return helper.ToAdminDivisionResponse(adminDivision)
 }
 
 func (a *AdminDivisionService) Delete(ctx context.Context, id int) {
-	tx, err := a.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
-
-	_, err = a.AdminDivisionRepository.FindById(ctx, tx, id)
+	_, err := a.AdminDivisionRepository.FindById(ctx, id)
 	if err != nil {
 		panic(exception.NewNotFoundError(err.Error()))
 	}
-
-	a.AdminDivisionRepository.Delete(ctx, tx, id)
+	a.AdminDivisionRepository.Delete(ctx, id)
 }
 
 func (a *AdminDivisionService) FindAll(ctx context.Context) []payload.AdminDivisionResponse {
-	tx, err := a.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
 
-	adminDivisions := a.AdminDivisionRepository.FindAll(ctx, tx)
+	adminDivisions := a.AdminDivisionRepository.FindAll(ctx)
 
 	return helper.ToAdminDivisionResponses(adminDivisions)
 }
 
 func (a *AdminDivisionService) FindById(ctx context.Context, id int) payload.AdminDivisionResponse {
-	tx, err := a.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
 
-	adminDivision, err := a.AdminDivisionRepository.FindById(ctx, tx, id)
+	adminDivision, err := a.AdminDivisionRepository.FindById(ctx, id)
 	if err != nil {
 		panic(exception.NewNotFoundError(err.Error()))
 	}
@@ -90,18 +64,14 @@ func (a *AdminDivisionService) Update(ctx context.Context, request payload.Admin
 	err := a.Validate.Struct(request)
 	helper.PanicIfError(err)
 
-	tx, err := a.DB.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
-
-	adminDivision, err := a.AdminDivisionRepository.FindById(ctx, tx, request.DivisionId)
+	adminDivision, err := a.AdminDivisionRepository.FindById(ctx, request.DivisionId)
 	if err != nil {
 		panic(exception.NewNotFoundError(err.Error()))
 	}
 
 	adminDivision.DivisionName = request.DivisionName
 
-	adminDivision = a.AdminDivisionRepository.Update(ctx, tx, adminDivision)
+	adminDivision = a.AdminDivisionRepository.Update(ctx, adminDivision)
 
 	return helper.ToAdminDivisionResponse(adminDivision)
 }

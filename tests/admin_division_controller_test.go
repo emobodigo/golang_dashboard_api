@@ -1,12 +1,14 @@
 package tests
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +17,7 @@ import (
 	"github.com/emobodigo/golang_dashboard_api/controller"
 	"github.com/emobodigo/golang_dashboard_api/helper"
 	"github.com/emobodigo/golang_dashboard_api/middleware"
+	"github.com/emobodigo/golang_dashboard_api/model/domain"
 	"github.com/emobodigo/golang_dashboard_api/repository"
 	"github.com/emobodigo/golang_dashboard_api/services"
 	"github.com/go-playground/validator/v10"
@@ -35,11 +38,14 @@ func setupTestDB() *sql.DB {
 	return db
 }
 
-func setupRouter() http.Handler {
-	db := setupTestDB()
+func truncateData(db *sql.DB) {
+	db.Exec("TRUNCATE admin_division")
+}
+
+func setupRouter(db *sql.DB) http.Handler {
 	validate := validator.New()
-	adminDivisionRepo := repository.NewAdminDivisionRepository()
-	adminDivisionService := services.NewAdminService(adminDivisionRepo, db, validate)
+	adminDivisionRepo := repository.NewAdminDivisionRepository(db)
+	adminDivisionService := services.NewAdminService(adminDivisionRepo, validate)
 	adminDivisionController := controller.NewAdminDivisionController(adminDivisionService)
 
 	authRouter := app.NewAuthRouter(adminDivisionController)
@@ -48,7 +54,9 @@ func setupRouter() http.Handler {
 }
 
 func TestCreateAdminDivisionSuccess(t *testing.T) {
-	router := setupRouter()
+	db := setupTestDB()
+	truncateData(db)
+	router := setupRouter(db)
 
 	requestBody := strings.NewReader(`{"division_name": "test"}`)
 	request := httptest.NewRequest(http.MethodPost, "http://localhost:5001/api/admindivisions", requestBody)
@@ -60,19 +68,21 @@ func TestCreateAdminDivisionSuccess(t *testing.T) {
 	router.ServeHTTP(recorder, request)
 
 	response := recorder.Result()
+	fmt.Println(response)
 	assert.Equal(t, 200, response.StatusCode)
 
 	body, _ := io.ReadAll(response.Body)
 	var responseBody map[string]interface{}
 	json.Unmarshal(body, &responseBody)
 
-	assert.Equal(t, 200, responseBody["code"])
+	assert.Equal(t, 201, int(responseBody["code"].(float64)))
 	assert.Equal(t, "OK", responseBody["status"])
 	assert.Equal(t, "test", responseBody["data"].(map[string]interface{})["division_name"])
 }
 
 func TestCreateAdminDivisionFailed(t *testing.T) {
-	router := setupRouter()
+	db := setupTestDB()
+	router := setupRouter(db)
 
 	requestBody := strings.NewReader(`{"division_name": "test"}`)
 	request := httptest.NewRequest(http.MethodPost, "http://localhost:5001/api/admindivisions", requestBody)
@@ -97,37 +107,260 @@ func TestCreateAdminDivisionFailed(t *testing.T) {
 }
 
 func TestUpdateAdminDivisionSuccess(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	divisionRepo := repository.NewAdminDivisionRepository(db)
+	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
+		DivisionName: "Test2",
+	})
+
+	router := setupRouter(db)
+
+	requestBody := strings.NewReader(`{"division_name": "test1"}`)
+	request := httptest.NewRequest(http.MethodPut, "http://localhost:5001/api/admindivisions/"+strconv.Itoa(division.DivisionId), requestBody)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("X-API-KEY", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer xaas")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 200, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	assert.Equal(t, 200, int(responseBody["code"].(float64)))
+	assert.Equal(t, "OK", responseBody["status"])
+	assert.Equal(t, division.DivisionId, int(responseBody["data"].(map[string]interface{})["division_id"].(float64)))
+	assert.Equal(t, "test1", responseBody["data"].(map[string]interface{})["division_name"])
 }
 
 func TestUpdateAdminDivisionFailed(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	divisionRepo := repository.NewAdminDivisionRepository(db)
+	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
+		DivisionName: "Test2",
+	})
+
+	router := setupRouter(db)
+
+	requestBody := strings.NewReader(`{"division_name": ""}`)
+	request := httptest.NewRequest(http.MethodPut, "http://localhost:5001/api/admindivisions/"+strconv.Itoa(division.DivisionId), requestBody)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("X-API-KEY", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer xaas")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 400, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+	fmt.Println(responseBody)
+	assert.Equal(t, 400, int(responseBody["code"].(float64)))
+	assert.Equal(t, "Bad Request", responseBody["status"])
 }
 
 func TestDeleteAdminDivisionSuccess(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	divisionRepo := repository.NewAdminDivisionRepository(db)
+	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
+		DivisionName: "Test2",
+	})
+
+	router := setupRouter(db)
+
+	request := httptest.NewRequest(http.MethodDelete, "http://localhost:5001/api/admindivisions/"+strconv.Itoa(division.DivisionId), nil)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("X-API-KEY", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer xaas")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 200, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+	fmt.Println(responseBody)
+	assert.Equal(t, 200, int(responseBody["code"].(float64)))
+	assert.Equal(t, "OK", responseBody["status"])
 }
 
 func TestDeleteAdminDivisionFailed(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	router := setupRouter(db)
+
+	request := httptest.NewRequest(http.MethodDelete, "http://localhost:5001/api/admindivisions/404", nil)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("X-API-KEY", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer xaas")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 404, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+	fmt.Println(responseBody)
+	assert.Equal(t, 404, int(responseBody["code"].(float64)))
+	assert.Equal(t, "Not Found", responseBody["status"])
 }
 
 func TestGetAdminDivisionSuccess(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	divisionRepo := repository.NewAdminDivisionRepository(db)
+	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
+		DivisionName: "Test2",
+	})
+
+	router := setupRouter(db)
+
+	request := httptest.NewRequest(http.MethodGet, "http://localhost:5001/api/admindivisions/"+strconv.Itoa(division.DivisionId), nil)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("X-API-KEY", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer xaas")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 200, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	assert.Equal(t, 200, int(responseBody["code"].(float64)))
+	assert.Equal(t, "OK", responseBody["status"])
+	assert.Equal(t, division.DivisionId, int(responseBody["data"].(map[string]interface{})["division_id"].(float64)))
+	assert.Equal(t, "Test2", responseBody["data"].(map[string]interface{})["division_name"])
 }
 
 func TestGetAdminDivisionFailed(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	router := setupRouter(db)
+
+	request := httptest.NewRequest(http.MethodDelete, "http://localhost:5001/api/admindivisions/404", nil)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("X-API-KEY", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer xaas")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 404, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+	fmt.Println(responseBody)
+	assert.Equal(t, 404, int(responseBody["code"].(float64)))
+	assert.Equal(t, "Not Found", responseBody["status"])
 }
 
 func TestGetAllAdminDivisionSuccess(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	divisionRepo := repository.NewAdminDivisionRepository(db)
+	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
+		DivisionName: "Test2",
+	})
+
+	router := setupRouter(db)
+
+	request := httptest.NewRequest(http.MethodGet, "http://localhost:5001/api/admindivisions", nil)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("X-API-KEY", "RAHASIA")
+	request.Header.Add("Authorization", "Bearer xaas")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 200, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	var divisions = responseBody["data"].([]interface{})
+	divisionResponse := divisions[0].(map[string]interface{})
+
+	assert.Equal(t, 200, int(responseBody["code"].(float64)))
+	assert.Equal(t, "OK", responseBody["status"])
+	assert.Equal(t, division.DivisionId, int(divisionResponse["division_id"].(float64)))
+	assert.Equal(t, "Test2", divisionResponse["division_name"])
 }
 
-func TestGetAllAdminDivisionFailed(t *testing.T) {
+func TestUnauthorizedApiKey(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	router := setupRouter(db)
+
+	request := httptest.NewRequest(http.MethodGet, "http://localhost:5001/api/admindivisions", nil)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("Authorization", "Bearer xaas")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 401, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	assert.Equal(t, 401, int(responseBody["code"].(float64)))
+	assert.Equal(t, "Invalid API Key", responseBody["status"])
 }
 
-func TestUnauthorized(t *testing.T) {
+func TestUnauthorizedBearer(t *testing.T) {
+	db := setupTestDB()
+	truncateData(db)
 
+	router := setupRouter(db)
+
+	request := httptest.NewRequest(http.MethodGet, "http://localhost:5001/api/admindivisions", nil)
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("X-API-KEY", "RAHASIA")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	response := recorder.Result()
+	assert.Equal(t, 401, response.StatusCode)
+
+	body, _ := io.ReadAll(response.Body)
+	var responseBody map[string]interface{}
+	json.Unmarshal(body, &responseBody)
+
+	assert.Equal(t, 401, int(responseBody["code"].(float64)))
+	assert.Equal(t, "Invalid Authorization Header", responseBody["status"])
 }

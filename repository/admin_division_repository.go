@@ -5,26 +5,30 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/emobodigo/golang_dashboard_api/exception"
 	"github.com/emobodigo/golang_dashboard_api/helper"
 	"github.com/emobodigo/golang_dashboard_api/model/domain"
 )
 
 type AdminDivisionRepository struct {
+	db *sql.DB
 }
 
-func NewAdminDivisionRepository() IAdminDivisionRepository {
-	return &AdminDivisionRepository{}
+func NewAdminDivisionRepository(passedDB *sql.DB) IAdminDivisionRepository {
+	return &AdminDivisionRepository{
+		db: passedDB,
+	}
 }
 
-func (a *AdminDivisionRepository) Delete(ctx context.Context, tx *sql.Tx, id int) {
+func (a *AdminDivisionRepository) Delete(ctx context.Context, id int) {
 	SQL := "DELETE FROM `admin_division` WHERE `division_id` = ?"
-	_, err := tx.ExecContext(ctx, SQL, id)
+	_, err := a.db.ExecContext(ctx, SQL, id)
 	helper.PanicIfError(err)
 }
 
-func (a *AdminDivisionRepository) FindAll(ctx context.Context, tx *sql.Tx) []domain.AdminDivision {
+func (a *AdminDivisionRepository) FindAll(ctx context.Context) []domain.AdminDivision {
 	SQL := "SELECT * FROM `admin_division`"
-	rows, err := tx.QueryContext(ctx, SQL)
+	rows, err := a.db.QueryContext(ctx, SQL)
 	helper.PanicIfError(err)
 
 	var adminDivisions []domain.AdminDivision
@@ -37,9 +41,9 @@ func (a *AdminDivisionRepository) FindAll(ctx context.Context, tx *sql.Tx) []dom
 	return adminDivisions
 }
 
-func (a *AdminDivisionRepository) FindById(ctx context.Context, tx *sql.Tx, id int) (domain.AdminDivision, error) {
+func (a *AdminDivisionRepository) FindById(ctx context.Context, id int) (domain.AdminDivision, error) {
 	SQL := "SELECT * FROM `admin_division` WHERE `division_id` = ?"
-	rows, err := tx.QueryContext(ctx, SQL, id)
+	rows, err := a.db.QueryContext(ctx, SQL, id)
 	helper.PanicIfError(err)
 
 	adminDivision := domain.AdminDivision{}
@@ -52,9 +56,14 @@ func (a *AdminDivisionRepository) FindById(ctx context.Context, tx *sql.Tx, id i
 	}
 }
 
-func (a *AdminDivisionRepository) Save(ctx context.Context, tx *sql.Tx, adminDivision domain.AdminDivision) domain.AdminDivision {
+func (a *AdminDivisionRepository) Save(ctx context.Context, adminDivision domain.AdminDivision) domain.AdminDivision {
+	duplicate := helper.CheckDuplicate(ctx, a.db, "admin_division", "division_name", adminDivision.DivisionName)
+	if duplicate {
+		err := errors.New("duplicate division name")
+		panic(exception.NewConflictError(err.Error()))
+	}
 	SQL := "INSERT INTO `admin_division` (`division_name`) VALUES (?)"
-	result, err := tx.ExecContext(ctx, SQL, adminDivision.DivisionName)
+	result, err := a.db.ExecContext(ctx, SQL, adminDivision.DivisionName)
 	helper.PanicIfError(err)
 
 	id, err := result.LastInsertId()
@@ -64,9 +73,9 @@ func (a *AdminDivisionRepository) Save(ctx context.Context, tx *sql.Tx, adminDiv
 	return adminDivision
 }
 
-func (a *AdminDivisionRepository) Update(ctx context.Context, tx *sql.Tx, adminDivision domain.AdminDivision) domain.AdminDivision {
-	SQL := "UPDATE `admin_division` SET `division_name` = ? WHERE `division_id` = ?"
-	_, err := tx.ExecContext(ctx, SQL, adminDivision.DivisionName, adminDivision.DivisionId)
+func (a *AdminDivisionRepository) Update(ctx context.Context, adminDivision domain.AdminDivision) domain.AdminDivision {
+	SQL := "UPDATE admin_division SET division_name = ? WHERE division_id = ?"
+	_, err := a.db.ExecContext(ctx, SQL, adminDivision.DivisionName, adminDivision.DivisionId)
 	helper.PanicIfError(err)
 	return adminDivision
 }

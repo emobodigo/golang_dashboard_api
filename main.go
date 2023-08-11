@@ -23,8 +23,8 @@ func main() {
 
 	db := app.NewDB()
 	validate := validator.New()
-	adminDivisionRepo := repository.NewAdminDivisionRepository()
-	adminDivisionService := services.NewAdminService(adminDivisionRepo, db, validate)
+	adminDivisionRepo := repository.NewAdminDivisionRepository(db)
+	adminDivisionService := services.NewAdminService(adminDivisionRepo, validate)
 	adminDivisionController := controller.NewAdminDivisionController(adminDivisionService)
 
 	authRouter := app.NewAuthRouter(adminDivisionController)
