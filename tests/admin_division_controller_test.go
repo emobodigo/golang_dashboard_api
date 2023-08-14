@@ -14,12 +14,10 @@ import (
 	"time"
 
 	"github.com/emobodigo/golang_dashboard_api/app"
-	"github.com/emobodigo/golang_dashboard_api/controller"
 	"github.com/emobodigo/golang_dashboard_api/helper"
 	"github.com/emobodigo/golang_dashboard_api/middleware"
 	"github.com/emobodigo/golang_dashboard_api/model/domain"
 	"github.com/emobodigo/golang_dashboard_api/repository"
-	"github.com/emobodigo/golang_dashboard_api/services"
 	"github.com/go-playground/validator/v10"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -39,16 +37,16 @@ func setupTestDB() *sql.DB {
 }
 
 func truncateData(db *sql.DB) {
-	db.Exec("TRUNCATE admin_division")
+	_, err := db.Exec("TRUNCATE admin_division")
+	if err != nil {
+		panic(err)
+	}
 }
 
 func setupRouter(db *sql.DB) http.Handler {
 	validate := validator.New()
-	adminDivisionRepo := repository.NewAdminDivisionRepository(db)
-	adminDivisionService := services.NewAdminService(adminDivisionRepo, validate)
-	adminDivisionController := controller.NewAdminDivisionController(adminDivisionService)
 
-	authRouter := app.NewAuthRouter(adminDivisionController)
+	authRouter := app.NewAuthRouter(db, validate)
 	authHandler := middleware.NewAuthMiddleware(authRouter)
 	return authHandler
 }

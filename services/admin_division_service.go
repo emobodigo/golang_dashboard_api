@@ -16,7 +16,7 @@ type AdminDivisionService struct {
 	Validate                *validator.Validate
 }
 
-func NewAdminService(adminDivisionRepository repository.IAdminDivisionRepository, validate *validator.Validate) IAdminDivisionService {
+func NewAdminDivisionService(adminDivisionRepository repository.IAdminDivisionRepository, validate *validator.Validate) IAdminDivisionService {
 	return &AdminDivisionService{
 		AdminDivisionRepository: adminDivisionRepository,
 		Validate:                validate,

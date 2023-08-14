@@ -19,3 +19,21 @@ func ToAdminDivisionResponses(divisions []domain.AdminDivision) []payload.AdminD
 	}
 	return divisionResponses
 }
+
+func ToAdminTierResponse(tier domain.AdminTier) payload.AdminTierResponse {
+	return payload.AdminTierResponse{
+		AdminTierId:  tier.AdminTierId,
+		AdminLevel:   tier.AdminLevel,
+		DivisionId:   tier.DivisionId,
+		LevelTitle:   tier.LevelTitle,
+		DivisionName: tier.AdminDivision.DivisionName,
+	}
+}
+
+func ToAdminTierResponses(adminTier []domain.AdminTier) []payload.AdminTierResponse {
+	var tierResponses []payload.AdminTierResponse
+	for _, tier := range adminTier {
+		tierResponses = append(tierResponses, ToAdminTierResponse(tier))
+	}
+	return tierResponses
+}

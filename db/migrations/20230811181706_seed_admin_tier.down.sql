@@ -1,0 +1,1 @@
+TRUNCATE TABLE admin_tier;

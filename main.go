@@ -6,11 +6,8 @@ import (
 	"os"
 
 	"github.com/emobodigo/golang_dashboard_api/app"
-	"github.com/emobodigo/golang_dashboard_api/controller"
 	"github.com/emobodigo/golang_dashboard_api/helper"
 	"github.com/emobodigo/golang_dashboard_api/middleware"
-	"github.com/emobodigo/golang_dashboard_api/repository"
-	"github.com/emobodigo/golang_dashboard_api/services"
 	"github.com/go-playground/validator/v10"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
@@ -23,11 +20,8 @@ func main() {
 
 	db := app.NewDB()
 	validate := validator.New()
-	adminDivisionRepo := repository.NewAdminDivisionRepository(db)
-	adminDivisionService := services.NewAdminService(adminDivisionRepo, validate)
-	adminDivisionController := controller.NewAdminDivisionController(adminDivisionService)
 
-	authRouter := app.NewAuthRouter(adminDivisionController)
+	authRouter := app.NewAuthRouter(db, validate)
 
 	authHandler := middleware.NewAuthMiddleware(authRouter)
 
