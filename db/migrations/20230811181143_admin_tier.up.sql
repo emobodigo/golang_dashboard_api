@@ -1,4 +1,4 @@
-CREATE TABLE `admin_tier` (
+CREATE TABLE IF NOT EXISTS `admin_tier` (
   `admin_tier_id` int(11) NOT NULL AUTO_INCREMENT,
   `admin_level` int(11) NOT NULL,
   `division_id` int(11) NOT NULL,

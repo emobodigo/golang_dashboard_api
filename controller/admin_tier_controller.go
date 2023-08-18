@@ -7,6 +7,7 @@ import (
 	"github.com/emobodigo/golang_dashboard_api/helper"
 	"github.com/emobodigo/golang_dashboard_api/model/payload"
 	"github.com/emobodigo/golang_dashboard_api/services"
+	"github.com/emobodigo/golang_dashboard_api/util"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -37,12 +38,14 @@ func (a *AdminTierController) FindAllPaged(w http.ResponseWriter, r *http.Reques
 	queryValues := r.URL.Query()
 	pageString := queryValues.Get("page")
 	sort := queryValues.Get("sort")
-
+	if pageString == "" {
+		pageString = "1"
+	}
 	page, err := strconv.Atoi(pageString)
 	helper.PanicIfError(err)
 
 	adminTierReq := payload.AdminTierPagedRequest{}
-	adminTierReq.Page = page
+	adminTierReq.Page = util.StringInt(page)
 	adminTierReq.Sort = sort
 
 	tiers := a.AdminTierService.FindAllPaged(r.Context(), adminTierReq)
@@ -59,7 +62,7 @@ func (a *AdminTierController) FindById(w http.ResponseWriter, r *http.Request, p
 	id, err := strconv.Atoi(adminTierId)
 	helper.PanicIfError(err)
 
-	tier := a.AdminTierService.FindById(r.Context(), id)
+	tier := a.AdminTierService.FindById(r.Context(), util.StringInt(id))
 	apiResponse := payload.ApiResponse{
 		Code:   200,
 		Status: "OK",
@@ -76,7 +79,7 @@ func (a *AdminTierController) Update(w http.ResponseWriter, r *http.Request, par
 	id, err := strconv.Atoi(adminTierId)
 	helper.PanicIfError(err)
 
-	tierUpdateRequest.AdminTierId = id
+	tierUpdateRequest.AdminTierId = util.StringInt(id)
 	tier := a.AdminTierService.Update(r.Context(), tierUpdateRequest)
 	apiResponse := payload.ApiResponse{
 		Code:   200,

@@ -1,4 +1,4 @@
-CREATE TABLE `admin_division` (
+CREATE TABLE IF NOT EXISTS `admin_division` (
   `division_id` int(11) NOT NULL AUTO_INCREMENT,
   `division_name` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`division_id`)

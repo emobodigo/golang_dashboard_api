@@ -10,6 +10,7 @@ import (
 	"github.com/emobodigo/golang_dashboard_api/exception"
 	"github.com/emobodigo/golang_dashboard_api/helper"
 	"github.com/emobodigo/golang_dashboard_api/model/domain"
+	"github.com/emobodigo/golang_dashboard_api/util"
 )
 
 type AdminTierRepository struct {
@@ -41,11 +42,11 @@ func (a *AdminTierRepository) FindAll(ctx context.Context) []domain.AdminTier {
 	return adminTiers
 }
 
-func (a *AdminTierRepository) FindById(ctx context.Context, id int) (domain.AdminTier, error) {
+func (a *AdminTierRepository) FindById(ctx context.Context, id util.StringInt) (domain.AdminTier, error) {
 	SQL := `SELECT at.*, ad.division_name
 		FROM admin_tier at
 		JOIN admin_division ad ON ad.division_id = at.division_id
-		WHERE at.admin_tier = ?	
+		WHERE at.admin_tier_id = ?	
 	`
 	rows := a.db.QueryRowContext(ctx, SQL, id)
 	adminTier := domain.AdminTier{}
@@ -71,10 +72,10 @@ func (a *AdminTierRepository) Save(ctx context.Context, adminTier domain.AdminTi
 
 	id, err := result.LastInsertId()
 	helper.PanicIfError(err)
-	adminTier.AdminTierId = int(id)
+	adminTier.AdminTierId = util.StringInt(id)
 	adminTier.Fulltime = 1
 
-	createdAdminTier, _ := a.FindById(ctx, int(id))
+	createdAdminTier, _ := a.FindById(ctx, util.StringInt(id))
 	adminTier.AdminDivision.DivisionName = createdAdminTier.AdminDivision.DivisionName
 	return adminTier
 }
@@ -92,8 +93,8 @@ func (a *AdminTierRepository) Update(ctx context.Context, adminTier domain.Admin
 	return adminTier
 }
 
-func (a *AdminTierRepository) FindAllPaged(ctx context.Context, sort string, page int, itemPerPage int) []domain.AdminTier {
-	start := (page - 1) * itemPerPage
+func (a *AdminTierRepository) FindAllPaged(ctx context.Context, sort string, page util.StringInt, itemPerPage util.StringInt) []domain.AdminTier {
+	start := (int(page) - 1) * int(itemPerPage)
 	sortDir := "DESC"
 	if strings.Contains(sort, "|") {
 		sortDir = strings.Split(sort, "|")[1]

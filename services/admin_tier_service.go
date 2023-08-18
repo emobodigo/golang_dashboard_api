@@ -2,12 +2,14 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/emobodigo/golang_dashboard_api/exception"
 	"github.com/emobodigo/golang_dashboard_api/helper"
 	"github.com/emobodigo/golang_dashboard_api/model/domain"
 	"github.com/emobodigo/golang_dashboard_api/model/payload"
 	"github.com/emobodigo/golang_dashboard_api/repository"
+	"github.com/emobodigo/golang_dashboard_api/util"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -45,7 +47,7 @@ func (a *AdminTierService) FindAllPaged(ctx context.Context, request payload.Adm
 	return helper.ToAdminTierResponses(adminTiers)
 }
 
-func (a *AdminTierService) FindById(ctx context.Context, id int) payload.AdminTierResponse {
+func (a *AdminTierService) FindById(ctx context.Context, id util.StringInt) payload.AdminTierResponse {
 	adminTier, err := a.AdminTierRepository.FindById(ctx, id)
 	if err != nil {
 		panic(exception.NewNotFoundError(err.Error()))
@@ -56,7 +58,7 @@ func (a *AdminTierService) FindById(ctx context.Context, id int) payload.AdminTi
 func (a *AdminTierService) Update(ctx context.Context, request payload.AdminTierUpdateRequest) payload.AdminTierResponse {
 	err := a.Validate.Struct(request)
 	helper.PanicIfError(err)
-
+	fmt.Println(request.AdminTierId)
 	adminTier, err := a.AdminTierRepository.FindById(ctx, request.AdminTierId)
 	if err != nil {
 		panic(exception.NewNotFoundError(err.Error()))

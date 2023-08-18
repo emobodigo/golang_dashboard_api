@@ -35,5 +35,8 @@ func ToAdminTierResponses(adminTier []domain.AdminTier) []payload.AdminTierRespo
 	for _, tier := range adminTier {
 		tierResponses = append(tierResponses, ToAdminTierResponse(tier))
 	}
+	if len(tierResponses) == 0 {
+		return []payload.AdminTierResponse{}
+	}
 	return tierResponses
 }
