@@ -24,7 +24,8 @@ import (
 )
 
 func setupTestDB() *sql.DB {
-	db, err := sql.Open("mysql", "root@tcp(localhost:3306)/dashboard_api_test")
+	// db, err := sql.Open("mysql", "root@tcp(localhost:3306)/dashboard_api_test")
+	db, err := sql.Open("mysql", "root:root@tcp(localhost:3306)/dashboard_api_test")
 	helper.PanicIfError(err)
 
 	db.SetMaxIdleConns(5)
