@@ -36,6 +36,13 @@ func setupTestDB() *sql.DB {
 	return db
 }
 
+func clearDivisionData(db *sql.DB) {
+	_, err := db.Exec("DELETE FROM admin_division WHERE division_id > 3")
+	if err != nil {
+		panic(err)
+	}
+}
+
 func setupRouter(db *sql.DB) http.Handler {
 	validate := validator.New()
 
@@ -53,6 +60,7 @@ func setupHeaderWithAuth(request *http.Request) {
 func TestCreateAdminDivisionSuccess(t *testing.T) {
 	db := setupTestDB()
 	router := setupRouter(db)
+	clearDivisionData(db)
 
 	requestBody := strings.NewReader(`{"division_name": "test"}`)
 	request := httptest.NewRequest(http.MethodPost, "http://localhost:5001/api/admindivisions", requestBody)
@@ -76,8 +84,9 @@ func TestCreateAdminDivisionSuccess(t *testing.T) {
 func TestCreateAdminDivisionFailed(t *testing.T) {
 	db := setupTestDB()
 	router := setupRouter(db)
+	clearDivisionData(db)
 
-	requestBody := strings.NewReader(`{"division_name": "test"}`)
+	requestBody := strings.NewReader(`{"division_name": "Testing Division"}`)
 	request := httptest.NewRequest(http.MethodPost, "http://localhost:5001/api/admindivisions", requestBody)
 	setupHeaderWithAuth(request)
 
@@ -98,15 +107,16 @@ func TestCreateAdminDivisionFailed(t *testing.T) {
 
 func TestUpdateAdminDivisionSuccess(t *testing.T) {
 	db := setupTestDB()
+	clearDivisionData(db)
 
 	divisionRepo := repository.NewAdminDivisionRepository(db)
 	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
-		DivisionName: "Test2",
+		DivisionName: "Test1",
 	})
 
 	router := setupRouter(db)
 
-	requestBody := strings.NewReader(`{"division_name": "test1"}`)
+	requestBody := strings.NewReader(`{"division_name": "test1Update"}`)
 	request := httptest.NewRequest(http.MethodPut, "http://localhost:5001/api/admindivisions/"+strconv.Itoa(division.DivisionId), requestBody)
 	setupHeaderWithAuth(request)
 
@@ -123,11 +133,12 @@ func TestUpdateAdminDivisionSuccess(t *testing.T) {
 	assert.Equal(t, 200, int(responseBody["code"].(float64)))
 	assert.Equal(t, "OK", responseBody["status"])
 	assert.Equal(t, division.DivisionId, int(responseBody["data"].(map[string]interface{})["division_id"].(float64)))
-	assert.Equal(t, "test1", responseBody["data"].(map[string]interface{})["division_name"])
+	assert.Equal(t, "test1Update", responseBody["data"].(map[string]interface{})["division_name"])
 }
 
 func TestUpdateAdminDivisionFailed(t *testing.T) {
 	db := setupTestDB()
+	clearDivisionData(db)
 
 	divisionRepo := repository.NewAdminDivisionRepository(db)
 	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
@@ -155,10 +166,11 @@ func TestUpdateAdminDivisionFailed(t *testing.T) {
 
 func TestDeleteAdminDivisionSuccess(t *testing.T) {
 	db := setupTestDB()
+	clearDivisionData(db)
 
 	divisionRepo := repository.NewAdminDivisionRepository(db)
 	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
-		DivisionName: "Test2",
+		DivisionName: "Test3",
 	})
 
 	router := setupRouter(db)
@@ -183,6 +195,7 @@ func TestDeleteAdminDivisionFailed(t *testing.T) {
 	db := setupTestDB()
 
 	router := setupRouter(db)
+	clearDivisionData(db)
 
 	request := httptest.NewRequest(http.MethodDelete, "http://localhost:5001/api/admindivisions/404", nil)
 	setupHeaderWithAuth(request)
@@ -202,10 +215,11 @@ func TestDeleteAdminDivisionFailed(t *testing.T) {
 
 func TestGetAdminDivisionSuccess(t *testing.T) {
 	db := setupTestDB()
+	clearDivisionData(db)
 
 	divisionRepo := repository.NewAdminDivisionRepository(db)
 	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
-		DivisionName: "Test2",
+		DivisionName: "Test4",
 	})
 
 	router := setupRouter(db)
@@ -226,11 +240,12 @@ func TestGetAdminDivisionSuccess(t *testing.T) {
 	assert.Equal(t, 200, int(responseBody["code"].(float64)))
 	assert.Equal(t, "OK", responseBody["status"])
 	assert.Equal(t, division.DivisionId, int(responseBody["data"].(map[string]interface{})["division_id"].(float64)))
-	assert.Equal(t, "Test2", responseBody["data"].(map[string]interface{})["division_name"])
+	assert.Equal(t, "Test4", responseBody["data"].(map[string]interface{})["division_name"])
 }
 
 func TestGetAdminDivisionFailed(t *testing.T) {
 	db := setupTestDB()
+	clearDivisionData(db)
 
 	router := setupRouter(db)
 
@@ -252,10 +267,11 @@ func TestGetAdminDivisionFailed(t *testing.T) {
 
 func TestGetAllAdminDivisionSuccess(t *testing.T) {
 	db := setupTestDB()
+	clearDivisionData(db)
 
 	divisionRepo := repository.NewAdminDivisionRepository(db)
 	division := divisionRepo.Save(context.Background(), domain.AdminDivision{
-		DivisionName: "Test2",
+		DivisionName: "Test5",
 	})
 
 	router := setupRouter(db)
@@ -274,16 +290,17 @@ func TestGetAllAdminDivisionSuccess(t *testing.T) {
 	json.Unmarshal(body, &responseBody)
 
 	var divisions = responseBody["data"].([]interface{})
-	divisionResponse := divisions[0].(map[string]interface{})
+	divisionResponse := divisions[3].(map[string]interface{})
 
 	assert.Equal(t, 200, int(responseBody["code"].(float64)))
 	assert.Equal(t, "OK", responseBody["status"])
 	assert.Equal(t, division.DivisionId, int(divisionResponse["division_id"].(float64)))
-	assert.Equal(t, "Test2", divisionResponse["division_name"])
+	assert.Equal(t, "Test5", divisionResponse["division_name"])
 }
 
 func TestUnauthorizedApiKey(t *testing.T) {
 	db := setupTestDB()
+	clearDivisionData(db)
 
 	router := setupRouter(db)
 
@@ -307,6 +324,7 @@ func TestUnauthorizedApiKey(t *testing.T) {
 
 func TestUnauthorizedBearer(t *testing.T) {
 	db := setupTestDB()
+	clearDivisionData(db)
 
 	router := setupRouter(db)
 
