@@ -16,7 +16,6 @@ jobs:
     env:
       DB_DATABASE: dashboard_api_test
       DB_USER: root
-      DB_PASSWORD: root
     steps:
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -29,7 +28,7 @@ jobs:
       - name: Set up MySQL
         run: |
           sudo /etc/init.d/mysql start
-          mysql -e 'CREATE DATABASE ${{ env.DB_DATABASE }};' -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }}
+          mysql -e 'CREATE DATABASE ${{ env.DB_DATABASE }};' -u${{ env.DB_USER }}
 
       - name: Install golang-migrate
         run: |
@@ -38,7 +37,7 @@ jobs:
           which migrate
 
       - name: Run migrations
-        run: make migrate_ci
+        run: make migrate_test
 
       - name: Test
         run: make test
