@@ -13,7 +13,13 @@ run:
 migrate_test:
 	migrate -database "mysql://root@tcp(localhost:3306)/dashboard_api_test" -path db/migrations up
 
+migrate_ci:
+	migrate -database "mysql://root:root@tcp(localhost:3306)/dashboard_api_test" -path db/migrations up
+
 sqlc:
 	sqlc generate
 
-.PHONY: migrate_up migrate_down migrate_force run migrate_test sqlc
+test:
+	go test -v -cover ./...
+
+.PHONY: migrate_up migrate_down migrate_force run migrate_test sqlc migrate_ci test
